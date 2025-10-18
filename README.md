@@ -11,9 +11,8 @@
   
     -Renatha Sanchez
 
-  Selected Topic: 
+  Selected Topic: Mini-FTP
 
-    -
-
-#Project Overview
+# Project Overview
+  Our goal is to 
   
