@@ -46,3 +46,38 @@ Retransmission Logic:
     Timeout-based retransmission of the entire window.
     
     Cumulative ACKs supported.
+
+Reliability Guarantees
+
+    Packet Loss: Detected via timeout; triggers retransmission.
+    
+    Duplication: Duplicate sequence numbers are discarded.
+    
+    Reordering: GBN ensures in-order delivery; out-of-order packets are discarded.
+
+# Application Layer Design Plan
+Message Format & Commands
+
+    Supported commands:
+    
+    LIST — Lists files available on the server.
+    
+    GET <filename> — Downloads a file from server to client.
+    
+    PUT <filename> — Uploads a file from client to server.
+
+QUIT — Ends the client session.
+
+    Client-Server Interaction
+    
+    Client sends commands to the server.
+    
+    Server parses the command and performs the corresponding file operation.
+    
+    Both client and server use our reliable GBN protocol over UDP for data exchange.
+
+Concurrency
+    
+    Server uses multithreading or async IO to handle multiple clients concurrently (minimum 2).
+    
+    Each client connection is handled in a separate thread or async task.
