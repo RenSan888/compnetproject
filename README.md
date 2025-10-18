@@ -3,11 +3,17 @@
 # Team Information
   Group members:
   
-  -Bao Phuc Nguyen
+    -Bao Phuc Nguyen
   
-  -Chikwanine Kasali
+    -Chikwanine Kasali
   
-  -Josiah Leija
+    -Josiah Leija
   
-  -Renatha Sanchez
+    -Renatha Sanchez
+
+  Selected Topic: 
+
+    -
+
+#Project Overview
   
