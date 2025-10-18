@@ -81,3 +81,56 @@ Concurrency
     Server uses multithreading or async IO to handle multiple clients concurrently (minimum 2).
     
     Each client connection is handled in a separate thread or async task.
+
+# Testing and Metrics Plan
+Test Environments
+    
+    We will simulate the following network conditions using tools like tc (Linux) or a network emulator:
+    
+    Clean Network: No loss, delay, or reordering.
+    
+    Random Loss: Simulated packet loss (5%–10%).
+    
+    Bursty Loss: Groups of packets lost (e.g., 3-5 in a row).
+
+Metrics to Collect
+
+    Throughput: Bytes transferred per second.
+    
+    Latency: Time between request and completion.
+    
+    Retransmissions: Number of packets resent.
+    
+    File Integrity: Files checked with SHA-256 hashes.
+    
+    Completion Rate: Percentage of successful transfers.
+
+# Progress Summary
+What Has Been Implemented So Far:
+
+    Packet Class Structure:
+    The Packet class has been implemented to encapsulate key transport-layer information:
+    
+    seq_num: Sequence number
+    
+    ack_num: Acknowledgment number
+    
+    flags: Control flags (e.g., 0 = DATA, 1 = ACK)
+    
+    payload: The data carried by the packet
+
+What Remains to Be Completed:
+
+from_bytes Method:
+
+    Required to deserialize a received byte stream back into a Packet object.
+    
+    Needs to validate checksum, extract fields, and handle any errors (e.g., corrupted or truncated data).
+
+Input Validation / Error Handling:
+
+    The class currently assumes valid inputs.
+    
+    Could be extended with basic validation (e.g., checking payload size, verifying flags).
+
+This GitHub was created after making some of the code so the changes don't show who edited it.
