@@ -19,30 +19,30 @@
 # Transport Protocol Design Plan
 Packet Header Fields:
 
-  Sequence Number (4 bytes)
-  
-  Acknowledgment Number (4 bytes)
-  
-  Flags (SYN, ACK, FIN, DATA)
-  
-  Payload Length (2 bytes)
-  
-  Checksum (2 bytes)
+    Sequence Number (4 bytes)
+    
+    Acknowledgment Number (4 bytes)
+    
+    Flags (SYN, ACK, FIN, DATA)
+    
+    Payload Length (2 bytes)
+    
+    Checksum (2 bytes)
 
 Timers:
   
-  Per-connection timeout for retransmission.
-  
-  Adaptive timeout based on estimated RTT (optional).
+    Per-connection timeout for retransmission.
+    
+    Adaptive timeout based on estimated RTT (optional).
 
 Flow Control:
 
-  Window size configurable (default: 5 packets).
-  
-  Sliding window maintained on sender.
+    Window size configurable (default: 5 packets).
+    
+    Sliding window maintained on sender.
 
 Retransmission Logic:
   
-  Timeout-based retransmission of the entire window.
-  
-  Cumulative ACKs supported.
+    Timeout-based retransmission of the entire window.
+    
+    Cumulative ACKs supported.
