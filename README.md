@@ -85,7 +85,7 @@ Concurrency
 # Testing and Metrics Plan
 Test Environments
     
-    We will simulate the following network conditions using tools like tc (Linux) or a network emulator:
+    We will simulate the following network conditions using tools like tc (Linux):
     
     Clean Network: No loss, delay, or reordering.
     
