@@ -133,4 +133,13 @@ Input Validation / Error Handling:
     
     Could be extended with basic validation (e.g., checking payload size, verifying flags).
 
+Remaining Classes:
+
+    gbn_protocol.py (Go-Back)
+  
+    ftp_server.py
+    
+    ftp_client.py
+  
+
 This GitHub was created after making some of the code so the changes don't show who edited it.
