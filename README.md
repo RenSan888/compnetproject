@@ -198,3 +198,58 @@ Remaining Classes (COMPLETED):
      Improve error messages / logging.
     
      Handle invalid packets more robustly.
+
+# Common requirements (Also check for these requirements in the code)
+  
+  Transport (your custom protocol)
+  
+      Define a header including at least: ver, flags, conn_id, seq, ack, len, checksum.
+      
+          Implement reliability using one of the protocols from the textbook:
+          
+          Stop-and-Wait ARQ
+          
+          Go-Back-N
+          
+          Selective Repeat
+          
+          TCP-like stream protocol
+  
+      Implement flow control (receiver-advertised window).
+      
+      Implement timeout & retransmission (fixed RTO or RTT-based estimation).
+      
+      Provide a clean API for the app layer, e.g.:
+      
+          Message-oriented: connect(addr), send_msg(b), on_message(cb), close()
+          
+          Stream-oriented: connect(addr), write(b), read(n, timeout), close()
+      
+      Checksum required.
+      
+      Collect metrics:
+  
+          Throughput (goodput)
+          
+          Average/95th-percentile latency
+          
+          Retransmissions per KB
+  
+    Application (the service you choose below)
+    
+        Define message grammar (text-based commands or lightweight binary).
+        
+        Handle errors (invalid commands, disconnects).
+        
+        Concurrency: serve ≥ 2 clients concurrently.
+
+# Testing Profiles
+
+    Clean Profile – minimal loss (0–1%) and low jitter.
+    
+    Random Loss Profile – random packet loss (5–10%).
+    
+    Bursty Loss Profile – burst losses averaging 8–12%.
+    
+    Your implementation must function correctly under all three profiles. Performance should degrade gracefully under loss but must not crash or hang.
+
