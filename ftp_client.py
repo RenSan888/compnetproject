@@ -1,74 +1,119 @@
 # ftp_client.py
+
+# Import socket module for UDP communication
 import socket
-from packet import Packet
+
+# Import os module for file system operations
+import os
+
+# Import Packet class and constants from packet.py
+from packet import Packet, DATA, ACK, EOT
+
+# Import GBNProtocol class to send files reliably
 from gbn_protocol import GBNProtocol
 
-def upload(sock, server_addr, filename):
-    """Send a file to the server using the Go-Back-N protocol."""
-    sock.sendto(f"PUT {filename}".encode(), server_addr)
-    resp, _ = sock.recvfrom(1024)
 
-    if resp != b"OK":
+def upload(sock, server_addr, filename):
+    """Upload a file to the server using Go-Back-N protocol."""
+
+    if not os.path.exists(filename):
+        print("File not found.")
+        return
+
+    # Send PUT command to server with filename
+    sock.sendto(f"PUT {filename}".encode(), server_addr)
+
+    # Wait for server response
+    resp, _ = sock.recvfrom(1024)
+    if resp != b"OK":  # Server must approve the upload
         print("Server refused file upload.")
         return
 
-    # Read file and split into 1 KB chunks
+    # Read the file in 1 KB chunks
+    chunks = []
     with open(filename, "rb") as f:
-        chunks = []
         while chunk := f.read(1024):
             chunks.append(chunk)
 
-    # Use Go-Back-N for reliable delivery
+    # Use Go-Back-N protocol to reliably send chunks
     gbn = GBNProtocol(sock, server_addr)
     gbn.send_data(chunks)
-    print("Upload Complete.")
+    print("Upload complete.")
+
 
 def download(sock, server_addr, filename):
-    """Request a file from the server and save it locally."""
-    sock.sendto(f"GET {filename}".encode(), server_addr)
-    resp, _ = sock.recvfrom(1024)
+    """Download a file from the server using Go-Back-N protocol."""
 
-    if resp != b"OK":
+    # Send GET command to server
+    sock.sendto(f"GET {filename}".encode(), server_addr)
+
+    # Wait for server response
+    resp, _ = sock.recvfrom(1024)
+    if resp != b"OK":  # Server must approve the download
         print("Server refused file download.")
         return
 
+    expected_seq = 0  # Next expected sequence number
+    sock.settimeout(3)  # Temporary timeout to detect stalled transfer
+
+    # Open file in write-binary mode
     with open(filename, "wb") as f:
-        expected_seq = 0  # Next expected packet sequence number
         while True:
-            data, _ = sock.recvfrom(4096)
             try:
+                # Receive a UDP packet (up to 4096 bytes)
+                data, _ = sock.recvfrom(4096)
+            except socket.timeout:
+                print("Server stopped sending. Download aborted.")
+                break
+
+            try:
+                # Convert received bytes into a Packet object
                 packet = Packet.from_bytes(data)
 
-                if packet.seq_num == expected_seq:
-                    if packet.flags == 0xFF:
+                if packet.seq_num == expected_seq:  # Only accept the expected packet
+                    if packet.flags == EOT:  # End-of-Transmission packet
+                        ack = Packet(0, packet.seq_num, ACK)
+                        sock.sendto(ack.to_bytes(), server_addr)  # ACK EOT
                         print("Download complete.")
                         break
+
+                    # Write valid data to file
                     f.write(packet.payload)
                     expected_seq += 1
 
-                # Send acknowledgment regardless (supports retransmissions)
-                ack = Packet(0, packet.seq_num, 1)
+                # Always ACK received packet (even duplicates)
+                ack = Packet(0, packet.seq_num, ACK)
                 sock.sendto(ack.to_bytes(), server_addr)
+
             except Exception:
-                # Ignore corrupted packets
+                # Ignore invalid packets or checksum failures
                 continue
 
+    sock.settimeout(None)  # Reset socket to blocking mode after transfer
+
+
 def main():
-    """Interactive client interface."""
+    # Create UDP socket for client
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("localhost", 9001))  # Client listens on port 9001
-    server_addr = ("localhost", 9000)
 
+    # Server address (localhost and UDP port 9000)
+    server_addr = ("127.0.0.1", 9000)
+
+    # Command loop for client
     while True:
-        command = input("ftp> ")
+        command = input("ftp> ").strip()  # Prompt user for command
 
-        if command.startswith("PUT "):
+        if command.startswith("PUT "):  # Upload file
             upload(sock, server_addr, command.split()[1])
-        elif command.startswith("GET "):
+        elif command.startswith("GET "):  # Download file
             download(sock, server_addr, command.split()[1])
-        elif command in ("exit", "quit"):
+        elif command in ("exit", "quit"):  # Exit client
             print("Goodbye")
             break
 
+
+# Run the client if this script is executed directly
 if __name__ == "__main__":
     main()
+
+
