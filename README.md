@@ -135,7 +135,7 @@ Input Validation / Error Handling:
     
     Could be extended with basic validation (e.g., checking payload size, verifying flags).
 
-Remaining Classes:
+Remaining Classes (COMPLETED):
 
     gbn_protocol.py (Go-Back)
   
