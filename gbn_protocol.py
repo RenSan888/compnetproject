@@ -1,115 +1,107 @@
 # gbn_protocol.py
-import threading  # Used for running ACK receiver in a separate thread
+
+# Import threading to handle concurrent operations (sending and receiving simultaneously)
+import threading
+
+# Import time for sleep/delay functions
 import time
-from packet import Packet
 
-# Define constants for Go-Back-N behavior
-WINDOW_SIZE = 5     # Max number of unacknowledged packets allowed
-TIMEOUT = 1.0       # Time in seconds before retransmission on timeout
+# Import Packet class and constants (DATA, ACK, EOT) from packet.py
+from packet import Packet, DATA, ACK, EOT
 
+# Maximum number of unacknowledged packets allowed in the window
+WINDOW_SIZE = 5
+
+# Timeout duration in seconds for retransmitting unacknowledged packets
+TIMEOUT = 1.0
+
+# Go-Back-N Protocol implementation class
 class GBNProtocol:
-    """Implements Go-Back-N ARQ protocol for reliable data transfer over UDP."""
-
+    # Constructor: initializes the protocol with a socket and destination address
     def __init__(self, sock, address):
-        self.sock = sock                   # UDP socket used for sending/receiving
-        self.address = address             # Destination address (IP, port)
-        self.base = 0                      # Oldest unacknowledged packet sequence number
-        self.next_seq = 0                  # Next sequence number to send
-        self.window = {}                   # Store sent but unacknowledged packets
-        self.lock = threading.Lock()       # Ensure thread-safe access to shared variables
-        self.timer = None                  # Timer for retransmissions
-        self.running = True                # Control flag for receiver thread
+        self.sock = sock              # UDP socket used for sending/receiving packets
+        self.address = address        # Destination address (IP, port)
+        self.base = 0                 # Sequence number of the oldest unacknowledged packet
+        self.next_seq = 0             # Sequence number for the next packet to send
+        self.window = {}              # Dictionary to store sent but unacknowledged packets
+        self.lock = threading.Lock()  # Lock to synchronize access to shared data (window, base)
+        self.timer = None             # Timer object for retransmissions
+        self.running = True           # Flag to control protocol execution
 
+    # Start or restart the retransmission timer
     def start_timer(self):
-        """Start or restart the retransmission timer."""
-        # Cancel existing timer (if running)
         if self.timer:
-            self.timer.cancel()
-        # Create a new timer that calls self.timeout() after TIMEOUT seconds
-        self.timer = threading.Timer(TIMEOUT, self.timeout)
-        self.timer.start()
+            self.timer.cancel()       # Cancel existing timer if it exists
+        if self.window:               # Only start timer if there are unacknowledged packets
+            self.timer = threading.Timer(TIMEOUT, self.timeout)  # Create a new timer
+            self.timer.start()        # Start the timer
 
+    # Timeout handler: called when a timer expires
     def timeout(self):
-        """Called when timer expires — resend all unacknowledged packets."""
-        with self.lock:
-            print("Timeout — resending current window of packets...")
-            # Resend all packets currently in window (oldest to newest)
-            for seq in sorted(self.window):
+        with self.lock:               # Lock to safely access shared data
+            if not self.window:       # If window is empty, no packets to resend
+                return
+            print("Timeout — resending current window...")  # Inform user of retransmission
+            for seq in sorted(self.window):                 # Resend all packets in current window
                 self.sock.sendto(self.window[seq].to_bytes(), self.address)
-            # Restart timer after resending
-            self.start_timer()
+            self.start_timer()        # Restart timer after resending
 
+    # Send a list of data chunks using Go-Back-N protocol
     def send_data(self, data_chunks):
-        """
-        Send a list of data chunks using Go-Back-N.
-        Spawns a receiver thread to listen for ACKs concurrently.
-        """
-        # Start separate thread to listen for acknowledgments
-        recv_thread = threading.Thread(target=self.recv_acks)
-        recv_thread.start()
+        self.running = True           # Set running flag to True at start
+        recv_thread = threading.Thread(target=self.recv_acks)  # Thread to receive ACKs concurrently
+        recv_thread.start()           # Start the ACK receiving thread
 
-        # Iterate over all data chunks to send
+        # Loop through all data chunks and send packets
         for chunk in data_chunks:
-            # Wait if window is full (i.e., next_seq outside base + WINDOW_SIZE)
+            # Wait if window is full
             while self.next_seq >= self.base + WINDOW_SIZE:
-                time.sleep(0.01)  # Yield CPU briefly
+                time.sleep(0.01)      # Short sleep to prevent busy-waiting
 
-            # Create a new data packet
-            packet = Packet(self.next_seq, 0, 0, chunk)
+            # Create a data packet with current sequence number
+            packet = Packet(self.next_seq, 0, DATA, chunk)
 
+            # Send packet and update window atomically
             with self.lock:
-                # Send packet over UDP
-                self.sock.sendto(packet.to_bytes(), self.address)
-                # Store in window for possible retransmission
-                self.window[self.next_seq] = packet
-
-                # If this is the first unacknowledged packet, start timer
-                if self.base == self.next_seq:
+                self.sock.sendto(packet.to_bytes(), self.address)  # Send packet over UDP
+                self.window[self.next_seq] = packet               # Store packet in window
+                if self.base == self.next_seq:                    # If base equals next_seq, start timer
                     self.start_timer()
+                self.next_seq += 1                                # Increment next sequence number
 
-                # Increment next sequence number
-                self.next_seq += 1
-
-        # After all chunks are sent, send a special “end-of-transfer” packet (flag = 0xFF)
+        # Send End-of-Transmission (EOT) packet after all data chunks
         while self.next_seq >= self.base + WINDOW_SIZE:
-            time.sleep(0.01)
-
-        packet = Packet(self.next_seq, 0, 0xFF, b'')
+            time.sleep(0.01)      # Wait if window is full
+        eot = Packet(self.next_seq, 0, EOT, b'')  # Create EOT packet
         with self.lock:
-            self.sock.sendto(packet.to_bytes(), self.address)
-            self.window[self.next_seq] = packet
+            self.sock.sendto(eot.to_bytes(), self.address)  # Send EOT packet
+            self.window[self.next_seq] = eot                # Add EOT packet to window
             self.next_seq += 1
 
-        # Wait until ACK receiver finishes
-        recv_thread.join()
+        recv_thread.join()  # Wait for the receiving thread to finish (all ACKs received)
+        print("Transfer complete, returning to prompt.")  # Inform user that transfer is done
 
+    # Thread method to receive ACKs and update the sending window
     def recv_acks(self):
-        """Continuously listen for ACKs and slide the window accordingly."""
-        while self.running:
+        while self.running:          # Keep receiving while protocol is running
             try:
-                # Receive raw packet bytes
-                data, _ = self.sock.recvfrom(1024)
-                ack = Packet.from_bytes(data)  # Decode ACK
+                data, _ = self.sock.recvfrom(1024)        # Receive raw data from socket
+                ack = Packet.from_bytes(data)            # Convert bytes to Packet object
+                with self.lock:                          # Lock to update shared variables safely
+                    if ack.flags == ACK and ack.ack_num >= self.base:
+                        # Cumulative ACK: remove all packets up to ack_num from window
+                        for seq in list(self.window.keys()):
+                            if seq <= ack.ack_num:
+                                del self.window[seq]
 
-                with self.lock:
-                    # Check if valid ACK and matches a packet in window
-                    if ack.flags == 1 and ack.ack_num in self.window:
-                        # Remove acknowledged packet
-                        del self.window[ack.ack_num]
+                        self.base = ack.ack_num + 1      # Move base forward
 
-                        # Slide the base forward if it was the oldest unacknowledged packet
-                        if ack.ack_num == self.base:
-                            while self.base not in self.window and self.base < self.next_seq:
-                                self.base += 1
-
-                            # If all packets are acknowledged, stop timer and end thread
-                            if self.base == self.next_seq:
-                                if self.timer:
-                                    self.timer.cancel()
-                                self.running = False
-                            else:
-                                # Restart timer for next pending packet
-                                self.start_timer()
-            except Exception:
-                # Ignore network errors or malformed packets
+                        if self.base == self.next_seq:  # If all packets acknowledged
+                            if self.timer:
+                                self.timer.cancel()     # Cancel the timer
+                            self.running = False         # Stop receiving ACKs
+                        else:
+                            self.start_timer()           # Restart timer for remaining unacknowledged packets
+            except Exception:               # Ignore exceptions (e.g., timeout, invalid packet)
                 continue
+
