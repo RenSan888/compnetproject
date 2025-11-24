@@ -119,6 +119,8 @@ What Has Been Implemented So Far:
     
     payload: The data carried by the packet
 
+    Created gbn_protocol.py, ftp_server.py, and ftp_client.py
+
 What Remains to Be Completed:
 
 from_bytes Method:
@@ -142,4 +144,57 @@ Remaining Classes:
     ftp_client.py
   
 
-This GitHub was created after making some of the code so the changes don't show who edited it.
+# To-do List 11/24/2025
+1. Transport Layer / Protocol
+
+     Optional: Add SYN/FIN flags for connection-like behavior.
+    
+     Optional: Adjust checksum to 2 bytes if strictly following spec.
+    
+     Optional: Implement adaptive timeout based on RTT.
+
+2. Application Layer
+
+     Implement LIST command:
+    
+    Server: send a list of files in the working directory.
+    
+    Client: display received file list.
+    
+     Optional: Input validation (e.g., filename exists, command syntax).
+
+3. Concurrency
+
+     Modify server to support multiple clients simultaneously:
+    
+    Each client session (PUT/GET/LIST) should run in a separate thread.
+
+4. Metrics & Testing
+
+     Track and report:
+    
+    Throughput (bytes/sec)
+    
+    Latency (time from request to completion)
+    
+    Retransmissions (count per transfer)
+    
+    File integrity (verify using SHA-256 hash)
+    
+    Completion rate (percentage of successful transfers)
+    
+     Test under network conditions:
+    
+    Clean network
+    
+    Random packet loss (5–10%)
+    
+    Bursty packet loss
+
+5. Client-Server Improvements (Optional)
+
+     Make QUIT command automatically send a shutdown signal to server if desired.
+    
+     Improve error messages / logging.
+    
+     Handle invalid packets more robustly.
