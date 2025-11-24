@@ -145,59 +145,59 @@ Remaining Classes (COMPLETED):
   
 
 # To-do List 11/24/2025
-1. Transport Layer / Protocol
-
-     Optional: Add SYN/FIN flags for connection-like behavior.
+    1. Transport Layer / Protocol
     
-     Optional: Adjust checksum to 2 bytes if strictly following spec.
+         Optional: Add SYN/FIN flags for connection-like behavior.
+        
+         Optional: Adjust checksum to 2 bytes if strictly following spec.
+        
+         Optional: Implement adaptive timeout based on RTT.
     
-     Optional: Implement adaptive timeout based on RTT.
-
-2. Application Layer
-
-     Implement LIST command:
+    2. Application Layer
     
-    Server: send a list of files in the working directory.
+         Implement LIST command:
+        
+        Server: send a list of files in the working directory.
+        
+        Client: display received file list.
+        
+         Optional: Input validation (e.g., filename exists, command syntax).
     
-    Client: display received file list.
+    3. Concurrency
     
-     Optional: Input validation (e.g., filename exists, command syntax).
-
-3. Concurrency
-
-     Modify server to support multiple clients simultaneously:
+         Modify server to support multiple clients simultaneously:
+        
+        Each client session (PUT/GET/LIST) should run in a separate thread.
     
-    Each client session (PUT/GET/LIST) should run in a separate thread.
-
-4. Metrics & Testing
-
-     Track and report:
+    4. Metrics & Testing
     
-    Throughput (bytes/sec)
+         Track and report:
+        
+        Throughput (bytes/sec)
+        
+        Latency (time from request to completion)
+        
+        Retransmissions (count per transfer)
+        
+        File integrity (verify using SHA-256 hash)
+        
+        Completion rate (percentage of successful transfers)
+        
+         Test under network conditions:
+        
+        Clean network
+        
+        Random packet loss (5–10%)
+        
+        Bursty packet loss
     
-    Latency (time from request to completion)
+    5. Client-Server Improvements (Optional)
     
-    Retransmissions (count per transfer)
-    
-    File integrity (verify using SHA-256 hash)
-    
-    Completion rate (percentage of successful transfers)
-    
-     Test under network conditions:
-    
-    Clean network
-    
-    Random packet loss (5–10%)
-    
-    Bursty packet loss
-
-5. Client-Server Improvements (Optional)
-
-     Make QUIT command automatically send a shutdown signal to server if desired.
-    
-     Improve error messages / logging.
-    
-     Handle invalid packets more robustly.
+         Make QUIT command automatically send a shutdown signal to server if desired.
+        
+         Improve error messages / logging.
+        
+         Handle invalid packets more robustly.
 
 # Common requirements (Also check for these requirements in the code)
   
