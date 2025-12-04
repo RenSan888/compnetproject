@@ -86,9 +86,14 @@ def send_file(sock, addr, filename):
     # Send all chunks reliably
     gbn.send_data(chunks)
 
+def handle_list(sock, addr):
+    """Send the list of files in the server directory to the client."""
+    files = os.listdir('.')  # List files in current directory
+    files_str = '\n'.join(files)
+    sock.sendto(files_str.encode(), addr)
 
 def main():
-    """Main server loop: waits for PUT/GET commands from clients."""
+    """Main server loop: waits for PUT/GET/LIST commands from clients."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Create a UDP socket
     sock.bind(("127.0.0.1", 9000))  # Bind to localhost:9000
     print("Server listening on UDP port 9000...")
@@ -125,6 +130,11 @@ def main():
                 send_file(sock, addr, command[1])  # Send file
                 print("Ready for next command...")
 
+            elif command[0] == "LIST":
+                # Client requests list of files
+                handle_list(sock, addr)
+                print("Sent file list to client.")
+
         except socket.timeout:
             # Ignore timeouts in main loop
             continue
@@ -133,7 +143,5 @@ def main():
             # Print any unexpected errors
             print(f"Error: {e}")
 
-
-# Run the server if this script is executed directly
 if __name__ == "__main__":
     main()
