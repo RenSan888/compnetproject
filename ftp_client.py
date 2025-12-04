@@ -12,7 +12,6 @@ from packet import Packet, DATA, ACK, EOT
 # Import GBNProtocol class to send files reliably
 from gbn_protocol import GBNProtocol
 
-
 def upload(sock, server_addr, filename):
     """Upload a file to the server using Go-Back-N protocol."""
 
@@ -39,7 +38,6 @@ def upload(sock, server_addr, filename):
     gbn = GBNProtocol(sock, server_addr)
     gbn.send_data(chunks)
     print("Upload complete.")
-
 
 def download(sock, server_addr, filename):
     """Download a file from the server using Go-Back-N protocol."""
@@ -91,6 +89,11 @@ def download(sock, server_addr, filename):
 
     sock.settimeout(None)  # Reset socket to blocking mode after transfer
 
+def list_files(sock, server_addr):
+    """Request and display the list of files from the server."""
+    sock.sendto(b"LIST", server_addr)
+    data, _ = sock.recvfrom(65536)  # Large buffer for list
+    print("Files on server:\n" + data.decode())
 
 def main():
     # Create UDP socket for client
@@ -107,13 +110,15 @@ def main():
             upload(sock, server_addr, command.split()[1])
         elif command.startswith("GET "):  # Download file
             download(sock, server_addr, command.split()[1])
+        elif command == "LIST":
+            list_files(sock, server_addr)
         elif command in ("exit", "quit"):  # Exit client
             print("Goodbye")
             break
 
 
-# Run the client if this script is executed directly
 if __name__ == "__main__":
     main()
 
-
+#download file to your computer
+#GET C:\Users\NAME\Downloads\file.txt
